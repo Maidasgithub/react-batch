@@ -1,6 +1,8 @@
 "use client";
 import React, { useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
+import { CldUploadWidget } from 'next-cloudinary';
+import axios from "axios";
 
 const inputs = [
   { placeholder: "Title", name: "Title", type: "text" },
@@ -11,14 +13,16 @@ const inputs = [
     type: "select",
     options: ["News", "Sports", "Technologise"],
   },
-
   { placeholder: "Discription", name: "Description", type: "textarea" },
   { placeholder: "Featured", name: "isFeatured", type: "checkbox" },
-  { placeholder: "Image", name: "Images", type: "file" },
 ];
 
 const page = () => {
-  const [form, setForm] = useState({});
+  const [img ,setImg] = useState("")
+  const [form, setForm] = useState({
+    Title:"",
+    Description:"",
+  });
   const [loading, setLoading] = useState(false);
 
   function handler(e) {
@@ -30,14 +34,26 @@ const page = () => {
     setForm({ ...form, [name]: value });
   }
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault();
-    console.log(form);
+    let formdata = {...form,Images:img}
     setLoading(true);
-    setInterval(() => {
-      setLoading(false);
-    }, 3000);
-    toast.success("Your Blog Have Been Submittted!");
+    try {
+      const { data } = await axios.post("/api/blogs", formdata)
+      if (!data.success) {
+        toast.error(data.message);
+        return
+      }
+      toast.success("Your Blog Have Been Submittted!");
+
+    } catch (error) {
+      console.log(error)
+      toast.error("Somthing went wrong");
+
+    }
+    finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -77,7 +93,7 @@ const page = () => {
                   <option value="Gaming">Gaming</option>
                 </select>
               ) : v.type == "textarea" ? (
-                <textarea />
+                <textarea  onChange={handler} name={v.name} disabled={loading}/>
               ) : (
                 <input
                   id={i}
@@ -91,6 +107,19 @@ const page = () => {
               )}
             </div>
           ))}
+
+          <CldUploadWidget uploadPreset="baxrcxon"
+            onSuccess={(results) => {
+              setImg(results.info.secure_url) 
+            }}>
+            {({ open }) => {
+              return (
+                <button type="button" onClick={() => open()}>
+                  Upload an Image
+                </button>
+              );
+            }}
+          </CldUploadWidget>
         </div>
         <div className="flex justify-end gap-3 items-center">
           <button
